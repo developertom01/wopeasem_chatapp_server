@@ -5,13 +5,12 @@ const Server = require("socket.io").Server;
 const io = new Server(httpServer, { cors: { origin: "*" } });
 const mongoose = require("mongoose");
 const mongoDbConfigs = require("./config/mongoDbConfigs");
-const userRouter = require("./routes/users")
+const userRouter = require("./routes/users");
+require("./passport");
 
-app.use(express.json())
+app.use(express.json());
 
-
-app.use("/users",userRouter)
-
+app.use("/users", userRouter);
 
 const port = process.env.PORT || 5000;
 

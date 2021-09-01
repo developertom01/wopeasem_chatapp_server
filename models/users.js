@@ -40,7 +40,7 @@ userSchema.pre("save", function (next) {
   this.password = bcrypt.hashSync(this.password, 10);
   next();
 });
-userSchema.methods.comparePassword = function (passowrd) {
+userSchema.methods.validatePassword= function (passowrd) {
   return bcrypt.compareSync(passowrd, this.password);
 };
 
