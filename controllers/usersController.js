@@ -26,6 +26,16 @@ const createAccount = async (req, res) => {
 
 //List all Users -- Admin session
 
+const listAllUsers = async (req, res) => {
+  try {
+    const users = await User.find();
+    res.json(users);
+  } catch (error) {
+    console.log(String(error));
+    res.status(500).json({ detail: "Server error" });
+  }
+};
+
 //Update User information
 
 // Delete User  -- Admin session
@@ -36,4 +46,4 @@ const createAccount = async (req, res) => {
 
 // Change email
 
-module.exports = { createAccount };
+module.exports = { createAccount, listAllUsers };

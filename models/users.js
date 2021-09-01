@@ -16,6 +16,7 @@ const userSchema = new Schema(
     password: {
       type: Schema.Types.String,
       required: true,
+      select: false,
     },
     username: {
       type: Schema.Types.String,
@@ -42,6 +43,13 @@ userSchema.pre("save", function (next) {
 userSchema.methods.comparePassword = function (passowrd) {
   return bcrypt.compareSync(passowrd, this.password);
 };
+
+userSchema.set("toJSON", {
+  transform: (doc, ret, options) => {
+    ret.password = undefined;
+    return ret;
+  },
+});
 const User = model("User", userSchema, "users");
 
 module.exports = { User, userSchema };
