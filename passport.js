@@ -24,15 +24,16 @@ const jwt = new JwtStrategy(
 );
 
 passport.use(
-  new LocalStrategy((username, password, done) => {
-    User.findOne({ username }).then((user) => {
-      if (!user) return done(null, false, { message: "Incorrect username" });
-      if (!user.validatePassword(password))
-        return done(null, false, { message: "Incorrect password" });
-    });
-    return done(null, user).catch((err) => {
+  new LocalStrategy(async (username, password, done) => {
+    console.log(username);
+    try {
+      const user = await User.findOne({ username });
+      if (!user) return done(null, false);
+      else if (!user.validatePassword(password)) return done(null, false);
+      return done(null, user);
+    } catch (error) {
       return done(null, false);
-    });
+    }
   })
 );
 

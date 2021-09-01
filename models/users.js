@@ -15,8 +15,7 @@ const userSchema = new Schema(
     },
     password: {
       type: Schema.Types.String,
-      required: true,
-      select: false,
+      required: true
     },
     username: {
       type: Schema.Types.String,
@@ -40,8 +39,8 @@ userSchema.pre("save", function (next) {
   this.password = bcrypt.hashSync(this.password, 10);
   next();
 });
-userSchema.methods.validatePassword= function (passowrd) {
-  return bcrypt.compareSync(passowrd, this.password);
+userSchema.methods.validatePassword = function (password) {
+  return bcrypt.compareSync(password, this.password);
 };
 
 userSchema.set("toJSON", {
