@@ -25,7 +25,6 @@ const jwt = new JwtStrategy(
 
 passport.use(
   new LocalStrategy(async (username, password, done) => {
-    console.log(username);
     try {
       const user = await User.findOne({ username });
       if (!user) return done(null, false);
