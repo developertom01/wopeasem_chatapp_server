@@ -1,26 +1,21 @@
 const mongoose = require("mongoose");
+const uuid = require("uuid");
 const conversationTypes = require("../config/conversationTypes");
-const { userSchema } = require("./users");
 const { Schema, model } = mongoose;
-
-const messageSchema = new Schema(
-  {
-    user: userSchema,
-    message: {
-      type: String,
-      required: true,
-    },
-  },
-  { timestamps: true }
-);
 
 const conversationSchema = new Schema(
   {
     title: {
       type: String,
+      unique: false,
     },
-    users: [userSchema],
-    messages: [messageSchema],
+    users: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+    messages: [{ type: Schema.Types.ObjectId, ref: "Message" }],
     type: {
       type: String,
       default: conversationTypes.privateChat,
@@ -29,5 +24,5 @@ const conversationSchema = new Schema(
   { timestamps: true }
 );
 
-const Conversation = model("Conversation", conversationSchema, "converations");
-module.exports = { messageSchema, conversationSchema, Conversation };
+const Conversation = model("Conversation", conversationSchema, "conversations");
+module.exports = { conversationSchema, Conversation };

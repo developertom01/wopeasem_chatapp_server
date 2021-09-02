@@ -1,8 +1,14 @@
 const { Schema, model } = require("mongoose");
 const bcrypt = require("bcrypt");
 const userTypes = require("../config/userTypes");
+const { v4 } = require("uuid");
 const userSchema = new Schema(
   {
+    id: {
+      type: String,
+      default: v4(),
+      unique: true,
+    },
     name: {
       first_name: {
         type: Schema.Types.String,
@@ -15,12 +21,13 @@ const userSchema = new Schema(
     },
     password: {
       type: Schema.Types.String,
-      required: true
+      required: true,
     },
+    
     username: {
       type: Schema.Types.String,
       required: true,
-      unique: true,
+      unique: false,
     },
     email: {
       type: Schema.Types.String,
