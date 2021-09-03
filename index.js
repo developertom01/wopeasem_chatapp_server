@@ -12,6 +12,7 @@ const {
   createCreateConversation,
   updateConversation,
   addMemberToGroup,
+  addMessage,
 } = require("./sockets/conversations");
 
 require("./passport");
@@ -21,7 +22,6 @@ app.use("/auth", authRouter);
 app.use("/users", userRouter);
 
 const port = process.env.PORT || 5000;
-
 io.on("connection", (socket) => {
   console.log(socket.id);
   socket.broadcast.emit("All");
@@ -35,6 +35,7 @@ listConversations(io);
 createCreateConversation(io);
 updateConversation(io);
 addMemberToGroup(io);
+addMessage(io);
 
 mongoose.connect(mongoDbConfigs.connectionString, () => {
   console.log("DB connected");

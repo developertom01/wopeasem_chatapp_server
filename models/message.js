@@ -4,11 +4,6 @@ const { Schema, model } = mongoose;
 
 const messageSchema = new Schema(
   {
-    uid: {
-      type: String,
-      default: uuid.v4(),
-      unique: true,
-    },
     user: { type: Schema.Types.ObjectId, ref: "User" },
     conversation: { type: Schema.Types.ObjectId, ref: "Conversation" },
     text: {
@@ -19,6 +14,6 @@ const messageSchema = new Schema(
   { timestamps: true }
 );
 
-const Message = model("Message",messageSchema,"messages")
+const Message = model("Message", messageSchema, "messages");
 
-module.exports = {Message,messageSchema}
+module.exports = { Message, messageSchema };

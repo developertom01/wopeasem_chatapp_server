@@ -1,8 +1,10 @@
 // const Server = require("socket.io").Server;
 // const io = new Server();
+const { v4 } = require("uuid");
+const conversationTypes = require("../config/conversationTypes");
 const { Conversation } = require("../models/conversationModel");
+const { Message } = require("../models/message");
 const { User } = require("../models/users");
-require("../models/message");
 // const io = new Server();
 
 const listConversations = (io) => {
@@ -23,6 +25,7 @@ const listConversations = (io) => {
       })
         .populate({ path: "users" })
         .populate({ path: "messages" });
+      // .populate("messages.user");
 
       // conversations = conversations.filter((item) => item.users.includes(user));
       conversations.forEach((conv) => {
@@ -57,7 +60,7 @@ const createCreateConversation = (io) => {
     }
 
     //Create all
-    socket.on("create_conversation", async ({ title, type }) => {
+    socket.on("create_conversation", async ({ title }) => {
       if (!title)
         return socket.emit("conversations_error", {
           status: "error",
@@ -68,11 +71,40 @@ const createCreateConversation = (io) => {
         const user = await User.findOne({ id: userId });
         let conversation = new Conversation({
           title,
-          type,
+          type: conversationTypes.groupChat,
           users: [user._id],
         });
 
         conversation = await conversation.save();
+        conversation = await Conversation.findById(conversation._id)
+          .populate("users")
+          .populate("messages");
+        // console.log(conversation);
+        socket.join(conversation.id);
+        socket.emit("conversation_added", {
+          status: "success",
+          data: conversation,
+        });
+      } catch (error) {
+        console.log(error);
+        socket.emit("conversations_error", { detail: "Server error" });
+      }
+    });
+
+    //Add private conversation
+    socket.on("create_private_conversation", async ({ memberId }) => {
+      try {
+        const user = await User.findOne({ id: userId });
+        const member = await User.findOne({ id: memberId });
+        if (!member)
+          return socket.emit("conversations_error", {
+            detail: "User information cannot be found",
+          });
+
+        let conversation = await Conversation.create({
+          title: v4(),
+          users: [user._id, member._id],
+        });
         conversation = await Conversation.findById(conversation._id)
           .populate("users")
           .populate("messages");
@@ -181,9 +213,46 @@ const addMemberToGroup = (io) => {
   });
 };
 
+const addMessage = (io) => {
+  io.on("connection", async (socket) => {
+    const { userId } = socket.handshake.query;
+    try {
+      // Get user
+      const user = await User.findOne({ id: userId });
+      if (!user)
+        return socket.emit("conversations_error", {
+          status: "error",
+          detail: " An error occured findiing user profile",
+        });
+
+      socket.on("send_message", async ({ convId, text }) => {
+        const conversation = await Conversation.findById(convId);
+        if (!conversation)
+          return socket.emit("conversation_error", {
+            detail: "Conversation information not fount",
+          });
+        let message = await Message.create({
+          text,
+          conversation: conversation._id,
+          user: user._id,
+        });
+        message = await Message.findById(message._id).populate("user");
+        conversation.messages.push(message._id);
+        await conversation.save();
+        socket.join(conversation._id);
+        io.to(conversation._id).emit("message", message);
+      });
+    } catch (error) {
+      console.log(error);
+      socket.emit("conversations_error", { detail: "Server error" });
+    }
+  });
+};
+
 module.exports = {
   listConversations,
   createCreateConversation,
   updateConversation,
   addMemberToGroup,
+  addMessage,
 };
