@@ -1,8 +1,8 @@
 // const Server = require("socket.io").Server;
 // const io = new Server();
-const { user } = require("../config/userTypes");
 const { Conversation } = require("../models/conversationModel");
 const { User } = require("../models/users");
+require("../models/message");
 // const io = new Server();
 
 const listConversations = (io) => {
@@ -18,12 +18,18 @@ const listConversations = (io) => {
         });
 
       //Get conversations
-      consversations = await Conversation.find({}).populate({ path: "users"});
-      consversations.forEach((conv) => {
-        socket.join(conv.id);
-        socket.broadcast.emit("user_joined");
+      let conversations = await Conversation.find({
+        users: [user._id],
+      })
+        .populate({ path: "users" })
+        .populate({ path: "messages" });
+
+      // conversations = conversations.filter((item) => item.users.includes(user));
+      conversations.forEach((conv) => {
+        socket.join(conv._id);
+        socket.broadcast.emit("user_joined", { user });
       });
-      socket.emit("conversations", consversations);
+      socket.emit("conversations", conversations);
     } catch (error) {
       console.log(error);
       socket.emit("conversations_error", { detail: "Server error" });
@@ -47,7 +53,6 @@ const createCreateConversation = (io) => {
           detail: " An error occured findiing user profile",
         });
     } catch (error) {
-      console.log(error);
       socket.emit("conversations_error", { detail: "Server error" });
     }
 
@@ -68,11 +73,14 @@ const createCreateConversation = (io) => {
         });
 
         conversation = await conversation.save();
+        conversation = await Conversation.findById(conversation._id)
+          .populate("users")
+          .populate("messages");
         // console.log(conversation);
         socket.join(conversation.id);
         socket.emit("conversation_added", {
           status: "success",
-          data: JSON.stringify(conversation),
+          data: conversation,
         });
       } catch (error) {
         console.log(error);
@@ -82,4 +90,100 @@ const createCreateConversation = (io) => {
   });
 };
 
-module.exports = { listConversations, createCreateConversation };
+const updateConversation = (io) => {
+  io.on("connection", async (socket) => {
+    const { userId } = socket.handshake.query;
+    try {
+      // Get user
+      const user = await User.findOne({ id: userId });
+      if (!user)
+        return socket.emit("conversations_error", {
+          status: "error",
+          detail: " An error occured findiing user profile",
+        });
+
+      socket.on("update_conversation_group", async ({ groupId, title }) => {
+        if (!groupId)
+          return socket.emit("conversations_error", {
+            detail: "Group information not sent",
+          });
+        let group = await Conversation.findOne({ _id: groupId });
+        if (!group)
+          return socket.emit("conversations_error", {
+            detail: "Group information found",
+          });
+        if (!group.users.includes(user._id))
+          return socket.emit("conversations_error", {
+            detail: "Must belong to the group to make changes",
+          });
+        group = await Conversation.findByIdAndUpdate(group._id, {
+          $set: { title },
+        });
+        const groups = await Conversation.find({ users: [user._id] })
+          .populate({ path: "users" })
+          .populate({ path: "messages" });
+        socket.join(group._id);
+        io.to(group._id).emit("update_conversation", {
+          status: "success",
+          data: groups,
+        });
+      });
+    } catch (error) {
+      console.log(error);
+      socket.emit("conversations_error", { detail: "Server error" });
+    }
+  });
+};
+
+const addMemberToGroup = (io) => {
+  io.on("connection", async (socket) => {
+    const { userId } = socket.handshake.query;
+    try {
+      // Get user
+      const user = await User.findOne({ id: userId });
+      if (!user)
+        return socket.emit("conversations_error", {
+          status: "error",
+          detail: " An error occured findiing user profile",
+        });
+
+      socket.on("add_conversation_member", async ({ convId, userId }) => {
+        const member = await User.findById(userId);
+        if (!member)
+          return socket.emit("conversations_error", {
+            detail: "User information cannot be found",
+          });
+        let conversation = await Conversation.findById(convId);
+        if (!conversation)
+          return socket.emit("conversations_error", {
+            detail: "Conversation cannot be found",
+          });
+
+        if (conversation.users.includes(member._id))
+          return socket.emit("conversations_error", {
+            detail: "User is already a group member",
+          });
+
+        conversation.users.push(user._id);
+
+        await conversation.save();
+
+        conversation = await Conversation.findById(conversation._id)
+          .populate("users")
+          .populate("messages");
+        socket.join(conversation._id);
+        io.to(conversation._id).emit("added_member", conversation);
+      });
+    } catch (error) {
+      console.log(error);
+      socket.emit("conversations_error", { detail: "Server error" });
+    }
+  });
+};
+
+module.exports = {
+  listConversations,
+  createCreateConversation,
+  updateConversation,
+  addMemberToGroup,
+};

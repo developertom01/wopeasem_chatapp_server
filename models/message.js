@@ -11,7 +11,7 @@ const messageSchema = new Schema(
     },
     user: { type: Schema.Types.ObjectId, ref: "User" },
     conversation: { type: Schema.Types.ObjectId, ref: "Conversation" },
-    message: {
+    text: {
       type: String,
       required: true,
     },
@@ -19,6 +19,6 @@ const messageSchema = new Schema(
   { timestamps: true }
 );
 
-const Message = model("Message",messageSchema)
+const Message = model("Message",messageSchema,"messages")
 
 module.exports = {Message,messageSchema}

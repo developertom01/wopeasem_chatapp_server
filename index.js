@@ -10,6 +10,8 @@ const authRouter = require("./routes/login");
 const {
   listConversations,
   createCreateConversation,
+  updateConversation,
+  addMemberToGroup,
 } = require("./sockets/conversations");
 
 require("./passport");
@@ -31,6 +33,8 @@ io.on("connection", (socket) => {
 //Sockets
 listConversations(io);
 createCreateConversation(io);
+updateConversation(io);
+addMemberToGroup(io);
 
 mongoose.connect(mongoDbConfigs.connectionString, () => {
   console.log("DB connected");

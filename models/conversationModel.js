@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const uuid = require("uuid");
 const conversationTypes = require("../config/conversationTypes");
 const { Schema, model } = mongoose;
 
@@ -15,7 +14,12 @@ const conversationSchema = new Schema(
         ref: "User",
       },
     ],
-    messages: [{ type: Schema.Types.ObjectId, ref: "Message" }],
+    messages: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Message",
+      },
+    ],
     type: {
       type: String,
       default: conversationTypes.privateChat,
